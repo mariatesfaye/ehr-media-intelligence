@@ -41,6 +41,25 @@ for r in reports:
     print(r.to_text())
 ```
 
+## Task 3 — AI clinical summarization
+
+Set `ANTHROPIC_API_KEY` in `.env`, or export `USE_MOCK_SUMMARY=1` for offline/heuristic summaries.
+
+```bash
+# assumes bundles already in data/ehr.db (run ehr-fhir first)
+ehr-summarize
+```
+
+```python
+from ehr_media.summarization import summarize_patient
+
+summary = summarize_patient("MRN-67890")
+print(summary.narrative)
+print(summary.disclaimer)
+```
+
+Summaries are cached in SQLite (`summary_cache`) keyed by `patient_id` + FHIR `bundle_hash`.
+
 ## Tests
 
 ```bash

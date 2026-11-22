@@ -36,6 +36,14 @@ def init_db(db_path: Path | None = None) -> None:
                 report_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS summary_cache (
+                patient_id TEXT NOT NULL,
+                bundle_hash TEXT NOT NULL,
+                summary_json TEXT NOT NULL,
+                model TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (patient_id, bundle_hash)
+            );
             """
         )
 
@@ -85,6 +93,25 @@ def build_and_store_bundles(
         conn.commit()
 
     return reports
+
+
+def list_patient_ids(db_path: Path | None = None) -> list[str]:
+    db_path = db_path or get_db_path()
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        rows = conn.execute("SELECT patient_id FROM fhir_bundles ORDER BY patient_id").fetchall()
+    return [row["patient_id"] for row in rows]
+
+
+def get_bundle_content_hash(patient_id: str, db_path: Path | None = None) -> str | None:
+    db_path = db_path or get_db_path()
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT content_hash FROM fhir_bundles WHERE patient_id = ?",
+            (patient_id,),
+        ).fetchone()
+    return row["content_hash"] if row else None
 
 
 def get_bundle(patient_id: str, db_path: Path | None = None) -> dict[str, Any] | None:
