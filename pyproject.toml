@@ -1,12 +1,13 @@
 [project]
 name = "ehr-media-intelligence"
 version = "0.1.0"
-description = "EHR media ingestion and cleaning (Task 1)"
+description = "EHR media ingestion, cleaning, and FHIR R4 normalization"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.9.0",
     "python-dateutil>=2.9.0",
+    "fhir.resources>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -15,6 +16,9 @@ dev = ["pytest>=8.3.0"]
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
+
+[project.scripts]
+ehr-fhir = "ehr_media.fhir_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
