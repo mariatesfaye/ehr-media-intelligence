@@ -1,0 +1,5 @@
+mrn,patient_name,dob,gender,doc_date,doc_type,title,body
+12345,"Rivera, Jane",1985-03-12,F,2024-10-05,note,Office visit,Patient reports intermittent cough for two weeks.
+MRN-54321,"O'Brien, Sean",,M,12/03/2024,scan,Handwritten referral,Referred to cardiology for stress test scheduling.
+MRN-54321,"O'Brien, Sean",1970-12-03,Male,03-Dec-2024,lab,External lab fax,BMP within normal limits except mild hyponatremia Na 132.
+99887,Nair Priya,1992-08-15,female,2024-08-01,imaging,MRI brain,MRI shows no acute infarct. Stable chronic microvascular changes.
