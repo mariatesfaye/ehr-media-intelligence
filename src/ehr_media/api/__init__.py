@@ -1,0 +1,1 @@
+"""FastAPI application (Task 4 search API)."""

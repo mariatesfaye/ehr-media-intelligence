@@ -60,6 +60,23 @@ print(summary.disclaimer)
 
 Summaries are cached in SQLite (`summary_cache`) keyed by `patient_id` + FHIR `bundle_hash`.
 
+## Task 4 — Semantic search
+
+```bash
+ehr-fhir
+ehr-summarize
+ehr-index
+uvicorn ehr_media.api.main:app --reload
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"elevated troponin","limit":5}'
+```
+
+Optional query body fields: `resource_types`, `date_from`, `date_to`. Embeddings use `all-MiniLM-L6-v2` + ChromaDB (`data/chroma/`). Set `USE_HASH_EMBEDDINGS=1` for offline tests.
+
 ## Tests
 
 ```bash
