@@ -1,6 +1,6 @@
 # EHR Media Intelligence — Project Write-up
 
-## What we built
+## What I built
 
 A five-stage pipeline: **ingest/clean** heterogeneous JSON and CSV exports → **FHIR R4 bundles** (SQLite) → **Claude clinical summaries** (cached) → **semantic search** (Chroma + MiniLM) → **clinician UI** (Vanilla JS + Tailwind). Sample data and `pytest` cover ingestion edge cases, FHIR validation, summary schema/cache, and search API latency.
 
