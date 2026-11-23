@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from ehr_media.summarization.models import ClinicalSummary
+
 
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
@@ -25,3 +27,20 @@ class SearchResponse(BaseModel):
     query: str
     results: list[SearchHit]
     took_ms: float
+
+
+class ResourceListItem(BaseModel):
+    resource_type: str
+    resource_id: str
+    title: str
+    date: str
+
+
+class PatientSummaryResponse(BaseModel):
+    patient_id: str
+    summary: ClinicalSummary
+
+
+class PatientResourcesResponse(BaseModel):
+    patient_id: str
+    resources: list[ResourceListItem]

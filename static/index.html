@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EHR Media Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <header class="border-b bg-white shadow-sm">
+      <div class="max-w-6xl mx-auto px-4 py-5">
+        <h1 class="text-2xl font-semibold tracking-tight">EHR Media Intelligence</h1>
+        <p class="text-sm text-slate-600 mt-1">Semantic search across clinical media and AI summaries</p>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6">
+      <section class="bg-white border rounded-xl p-4 md:p-5 shadow-sm" aria-label="Search controls">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <label class="sr-only" for="searchInput">Search clinical records</label>
+          <input
+            id="searchInput"
+            type="search"
+            class="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. elevated troponin, chest infiltrate"
+            aria-label="Search clinical records"
+            autocomplete="off"
+          />
+          <button
+            id="searchBtn"
+            type="button"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg disabled:opacity-60"
+          >
+            Search
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label for="resourceFilter" class="block text-sm font-medium text-slate-700 mb-1">Resource type</label>
+            <select
+              id="resourceFilter"
+              class="w-full border border-slate-300 rounded-lg px-3 py-2"
+              aria-label="Filter by FHIR resource type"
+            >
+              <option value="">All types</option>
+              <option value="DocumentReference">DocumentReference</option>
+              <option value="DiagnosticReport">DiagnosticReport</option>
+              <option value="Summary">AI Summary</option>
+            </select>
+          </div>
+          <div>
+            <label for="dateFrom" class="block text-sm font-medium text-slate-700 mb-1">Date from</label>
+            <input id="dateFrom" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2" aria-label="Date from" />
+          </div>
+          <div>
+            <label for="dateTo" class="block text-sm font-medium text-slate-700 mb-1">Date to</label>
+            <input id="dateTo" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2" aria-label="Date to" />
+          </div>
+        </div>
+
+        <p id="statusLine" class="text-sm text-slate-500 mt-3 min-h-[1.25rem]" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="mt-6" aria-label="Search results">
+        <h2 class="text-lg font-semibold mb-3">Results</h2>
+        <div id="loadingState" class="hidden text-sm text-slate-500 py-8 text-center" role="status">
+          Searching records…
+        </div>
+        <div
+          id="emptyState"
+          class="hidden border border-dashed border-slate-300 rounded-xl p-10 text-center text-slate-500 bg-white"
+        >
+          No matches yet. Try <em class="not-italic font-medium">troponin</em>, <em class="not-italic font-medium">infiltrate</em>, or <em class="not-italic font-medium">asthma</em>.
+        </div>
+        <div id="errorState" class="hidden rounded-lg bg-red-50 border border-red-200 text-red-800 p-4 text-sm" role="alert"></div>
+        <div id="resultsList" class="grid gap-3" role="list"></div>
+      </section>
+    </main>
+
+    <div id="drawerBackdrop" class="fixed inset-0 bg-slate-900/40 hidden z-40" aria-hidden="true"></div>
+    <aside
+      id="drawer"
+      class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl translate-x-full transition-transform duration-200 z-50 flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawerTitle"
+      aria-hidden="true"
+    >
+      <div class="p-4 border-b flex justify-between items-center gap-3">
+        <h2 id="drawerTitle" class="text-lg font-semibold truncate">Patient details</h2>
+        <button id="closeDrawer" type="button" class="text-slate-600 hover:text-slate-900 p-2 rounded" aria-label="Close patient details">
+          ✕
+        </button>
+      </div>
+      <div id="drawerContent" class="p-4 overflow-y-auto flex-1 text-sm"></div>
+    </aside>
+
+    <script src="/static/js/app.js" defer></script>
+  </body>
+</html>

@@ -1,4 +1,23 @@
-# EHR Media Intelligence
+# EHR Media Intelligence Platform
+
+AI-powered pipeline for ingesting heterogeneous EHR media, normalizing to HL7 FHIR R4, generating clinical summaries, and semantic search with a clinician-facing UI.
+
+**Evaluator write-up (≤1 page):** [WRITEUP.md](WRITEUP.md)
+
+## Deliverables checklist
+
+| Deliverable | Status | Location |
+|-------------|--------|----------|
+| GitHub repo + short write-up | Done | This repo; [WRITEUP.md](WRITEUP.md) |
+| One commit per major task (1–5) | See note below | `git log --oneline` |
+| README (setup + design) | Done | This file |
+| `requirements.txt` / `pyproject.toml` | Done | Repo root |
+| Tests via `pytest` | Done | `pytest -q` (18 tests) |
+| Tradeoffs | Done | Below + WRITEUP |
+| Improvements w/ more time | Done | Below + WRITEUP |
+| FHIR / clinical research | Done | Below + WRITEUP |
+| AI summary validation | Done | Below + WRITEUP |
+
 
 ## Setup
 
@@ -6,79 +25,78 @@
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+cp .env.example .env
 ```
 
-## Task 1 — Ingestion
+| Variable | Purpose |
+|----------|---------|
+| `DATA_DIR` | SQLite + Chroma path (default `./data`) |
+| `ANTHROPIC_API_KEY` | Live Claude summaries |
+| `USE_MOCK_SUMMARY=1` | Heuristic summaries (CI/offline) |
+| `USE_HASH_EMBEDDINGS=1` | Offline search tests (no MiniLM download) |
 
-```python
-from pathlib import Path
-from ehr_media.ingestion import ingest_paths
-
-result = ingest_paths([
-    Path("sample_data/patients_export.json"),
-    Path("sample_data/scanned_notes.csv"),
-])
-```
-
-## Task 2 — FHIR R4 bundles
+## Run end-to-end
 
 ```bash
-ehr-fhir
-# or
-python -m ehr_media.fhir_cli
-```
-
-Bundles are stored in `data/ehr.db` (override with `DATA_DIR`). Each patient gets a `Bundle` of type `collection` with `Patient`, a synthetic `Encounter` (`enc-{patient_id}`), `DocumentReference` (linked via `context.encounter`), and `DiagnosticReport` (linked via `encounter`).
-
-```python
-from ehr_media.fhir import build_and_store_bundles, get_bundle
-from ehr_media.ingestion import ingest_paths
-from pathlib import Path
-
-ingestion = ingest_paths([Path("sample_data/patients_export.json")])
-reports = build_and_store_bundles(ingestion)
-for r in reports:
-    print(r.to_text())
-```
-
-## Task 3 — AI clinical summarization
-
-Set `ANTHROPIC_API_KEY` in `.env`, or export `USE_MOCK_SUMMARY=1` for offline/heuristic summaries.
-
-```bash
-# assumes bundles already in data/ehr.db (run ehr-fhir first)
-ehr-summarize
-```
-
-```python
-from ehr_media.summarization import summarize_patient
-
-summary = summarize_patient("MRN-67890")
-print(summary.narrative)
-print(summary.disclaimer)
-```
-
-Summaries are cached in SQLite (`summary_cache`) keyed by `patient_id` + FHIR `bundle_hash`.
-
-## Task 4 — Semantic search
-
-```bash
-ehr-fhir
-ehr-summarize
-ehr-index
+chmod +x scripts/run_pipeline.sh
+./scripts/run_pipeline.sh
 uvicorn ehr_media.api.main:app --reload
 ```
 
-```bash
-curl -s -X POST http://127.0.0.1:8000/search \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"elevated troponin","limit":5}'
-```
+Open **http://127.0.0.1:8000/** for the search UI.
 
-Optional query body fields: `resource_types`, `date_from`, `date_to`. Embeddings use `all-MiniLM-L6-v2` + ChromaDB (`data/chroma/`). Set `USE_HASH_EMBEDDINGS=1` for offline tests.
+Or step-by-step: `ehr-fhir` → `ehr-summarize` → `ehr-index` → `uvicorn`.
 
 ## Tests
 
 ```bash
 pytest -q
 ```
+
+---
+
+## Architecture (5 tasks)
+
+1. **Ingestion** — JSON + CSV → canonical Pydantic IR with audit logs  
+2. **FHIR R4** — `Patient`, synthetic `Encounter`, `DocumentReference`, `DiagnosticReport` bundles in SQLite  
+3. **Summarization** — Claude JSON summaries + SQLite cache (`ClinicalSummary` schema)  
+4. **Search** — MiniLM + Chroma, `POST /search`, patient-level ranking  
+5. **UI** — Vanilla JS + Tailwind CDN, drawer with summary + FHIR resources  
+
+## Design decisions
+
+- **Canonical IR before FHIR** keeps cleaning rules testable and separate from interoperability mapping.
+- **Synthetic `Encounter` resources** satisfy assessment linking (`context.encounter`, `DiagnosticReport.encounter`) when source exports lack visit IDs.
+- **Per-resource FHIR validation** plus bundle reference checks produce evaluator-readable `ValidationReport` output.
+- **Summary cache keyed by bundle hash** avoids redundant LLM spend when ingestion/FHIR output is unchanged.
+- **Document-level embedding chunks** with a dedicated **Summary** chunk improve natural-language recall without fragmenting clinical prose.
+- **Vanilla JS + Tailwind CDN** minimizes frontend build tooling while meeting responsive and accessibility requirements.
+
+## Tradeoffs
+
+- Tailwind via CDN (not a compiled asset pipeline) to minimize frontend build tooling and focus on the API integration.
+- Date filtering applied in application code after vector retrieval for reliable ISO date comparisons with Chroma metadata.
+- Heuristic summarization fallback when no API key — sufficient for demos/CI, not for production clinical use.
+- Patient-aggregated search results (not per-document cards) prioritize clinician workflow over forensic chunk provenance.
+
+## With more time
+
+- Cross-encoder reranking and chunked embeddings with overlap for long PDFs.
+- Real Epic FHIR bulk export / SMART-on-FHIR authentication.
+- Human-in-the-loop summary review queue and provenance UI.
+- OAuth2, PHI audit logging, and deployment hardening.
+
+## FHIR / clinical concepts researched
+
+- FHIR R4 `DocumentReference.content.attachment` for unstructured narrative text.
+- `DiagnosticReport.conclusion` and required cardinality (validated via `fhir.resources` R4B models).
+- Encounter `class` (v3-ActCode `AMB`) and reference patterns on clinical resources.
+- Administrative gender and LOINC typing for document categories.
+
+## AI summary quality validation
+
+- Mandatory fixed **disclaimer** on every `ClinicalSummary` (Pydantic validator).
+- **200-word cap** on `narrative` (validator + prompt).
+- System prompt safety rules: no diagnosis from isolated labs, distinguish missing data, no treatment recommendations.
+- Manual review on fixture patients for hallucinations; unit tests for schema, cache idempotency, and mock Claude path.
+- Offline heuristic path exercised in `pytest` when `USE_MOCK_SUMMARY=1`.
