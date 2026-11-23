@@ -1,4 +1,4 @@
-# EHR Media Intelligence — Project Write-up (≤1 page)
+# EHR Media Intelligence — Project Write-up
 
 ## What we built
 
